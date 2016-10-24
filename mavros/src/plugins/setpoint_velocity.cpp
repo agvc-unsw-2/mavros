@@ -41,7 +41,7 @@ public:
 		uas = &uas_;
 
 		//cmd_vel usually is the topic used for velocity control in many controllers / planners
-		vel_sub = sp_nh.subscribe("cmd_vel", 10, &SetpointVelocityPlugin::vel_cb, this);
+		vel_sub = sp_nh.subscribe("cmd_vel", 10, &SetpointVelocityPlugin::vel_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	const message_map get_rx_handlers() {
