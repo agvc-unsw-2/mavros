@@ -2,3 +2,5 @@
 *~
 *.pyc
 core
+debian/
+obj-*/
