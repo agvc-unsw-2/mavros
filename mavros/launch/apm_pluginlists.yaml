@@ -10,7 +10,7 @@ plugin_blacklist:
 - px4flow
 - 'vision_*'
 - distance_sensor
-- vibration
+#- vibration
 - altitude
 
 plugin_whitelist: []

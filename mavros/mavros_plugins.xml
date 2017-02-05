@@ -5,6 +5,9 @@
 	<class name="sys_status" type="mavplugin::SystemStatusPlugin" base_class_type="mavplugin::MavRosPlugin">
 		<description>Publish system status.</description>
 	</class>
+	<class name="range_pub" type="mavplugin::RangePlugin" base_class_type="mavplugin::MavRosPlugin">
+		<description>Publish distance sensor data.</description>
+	</class>
 	<class name="imu_pub" type="mavplugin::IMUPubPlugin" base_class_type="mavplugin::MavRosPlugin">
 		<description>Publish IMU data.</description>
 	</class>
