@@ -45,6 +45,7 @@ public:
 		gp_nh("~global_position"),
 		uas(nullptr),
 		tf_send(false),
+		tf_invert(false),
 		rot_cov(99999.0)
 	{ };
 
@@ -56,6 +57,7 @@ public:
 		gp_nh.param<std::string>("frame_id", frame_id, "map");
 		gp_nh.param("rot_covariance", rot_cov, 99999.0);
 		// tf subsection
+		gp_nh.param("tf/invert", tf_invert, false);
 		gp_nh.param("tf/send", tf_send, true);
 		gp_nh.param<std::string>("tf/frame_id", tf_frame_id, "map");
 		gp_nh.param<std::string>("tf/child_frame_id", tf_child_frame_id, "base_link");
@@ -95,6 +97,7 @@ private:
 	std::string frame_id;		//!< frame for topic headers
 	std::string tf_frame_id;	//!< origin for TF
 	std::string tf_child_frame_id;	//!< frame for TF and Pose
+	bool tf_invert;
 	bool tf_send;
 	double rot_cov;
 
@@ -277,6 +280,16 @@ private:
 			transform.transform.translation.x = odom->pose.pose.position.x;
 			transform.transform.translation.y = odom->pose.pose.position.y;
 			transform.transform.translation.z = odom->pose.pose.position.z;
+
+			if(tf_invert) {
+				Eigen::Quaterniond rot;
+				tf::quaternionMsgToEigen(transform.transform.rotation, rot);
+				rot = rot.inverse();
+				tf::quaternionEigenToMsg(rot, transform.transform.rotation);
+				transform.transform.translation.x *= -1.0;
+				transform.transform.translation.y *= -1.0;
+				transform.transform.translation.x *= -1.0;
+			}
 
 			uas->tf2_broadcaster.sendTransform(transform);
 		}

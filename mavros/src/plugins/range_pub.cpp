@@ -128,10 +128,10 @@ private:
 		// fill
 		range_msg->header.frame_id = frame_id;
 		range_msg->header.stamp = ros::Time::now();
-		range_msg->field_of_view = 0.001;
+		range_msg->field_of_view = field_of_view;
 		range_msg->radiation_type = 2;
 		range_msg->min_range = 0;
-		range_msg->max_range = 0;
+		range_msg->max_range = distance_raw.voltage;
 		range_msg->range = distance_raw.distance;
 
 		// publish
