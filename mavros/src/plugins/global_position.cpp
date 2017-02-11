@@ -288,7 +288,7 @@ private:
 				tf::quaternionEigenToMsg(rot, transform.transform.rotation);
 				transform.transform.translation.x *= -1.0;
 				transform.transform.translation.y *= -1.0;
-				transform.transform.translation.x *= -1.0;
+				transform.transform.translation.z *= -1.0;
 			}
 
 			uas->tf2_broadcaster.sendTransform(transform);
