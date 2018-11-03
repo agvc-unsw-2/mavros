@@ -2,6 +2,8 @@
 *~
 *.pyc
 core
+debian/
+obj-*/
 
 # generated
 libmavconn/include/mavconn/mavlink_dialect.h
