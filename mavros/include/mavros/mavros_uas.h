@@ -8,7 +8,7 @@
  * @{
  */
 /*
- * Copyright 2014,2015,2016 Vladimir Ermakov.
+ * Copyright 2014,2015,2016,2017 Vladimir Ermakov.
  *
  * This file is part of the mavros package and subject to the license terms
  * in the top-level LICENSE file of the mavros repository.
@@ -20,18 +20,19 @@
 #include <array>
 #include <mutex>
 #include <atomic>
+#include <eigen_conversions/eigen_msg.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <mavconn/interface.h>
 #include <mavros/utils.h>
 #include <mavros/frame_tf.h>
 
+#include <GeographicLib/Geoid.hpp>
+
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
-
-// XXX decide what to do with UAS signals
-#include <boost/signals2.hpp>
 
 namespace mavros {
 /**
@@ -64,6 +65,7 @@ namespace mavros {
  */
 class UAS {
 public:
+	using ConnectionCb = std::function<void(bool)>;
 	using lock_guard = std::lock_guard<std::recursive_mutex>;
 	using unique_lock = std::unique_lock<std::recursive_mutex>;
 
@@ -72,6 +74,7 @@ public:
 	using MAV_AUTOPILOT = mavlink::common::MAV_AUTOPILOT;
 	using MAV_MODE_FLAG = mavlink::common::MAV_MODE_FLAG;
 	using MAV_STATE = mavlink::common::MAV_STATE;
+	using timesync_mode = utils::timesync_mode;
 
 	UAS();
 	~UAS() {};
@@ -85,15 +88,6 @@ public:
 	 * @brief Mavros diagnostic updater
 	 */
 	diagnostic_updater::Updater diag_updater;
-
-	/**
-	 * @brief This signal emit when status was changed
-	 *
-	 * @param bool connection status
-	 *
-	 * XXX will be removed
-	 */
-	boost::signals2::signal<void(bool)> sig_connection_changed;
 
 	/**
 	 * @brief Return connection status
@@ -113,6 +107,11 @@ public:
 	 * Update autopilot connection status (every HEARTBEAT/conn_timeout)
 	 */
 	void update_connection_status(bool conn_);
+
+	/**
+	 * @brief Add connection change handler callback
+	 */
+	void add_connection_change_handler(ConnectionCb cb);
 
 	/**
 	 * @brief Returns vehicle type
@@ -172,23 +171,49 @@ public:
 
 	/* -*- IMU data -*- */
 
-	//! Store IMU data
-	void update_attitude_imu(sensor_msgs::Imu::Ptr &imu);
+	/**
+	 * @brief Store IMU data [ENU]
+	 */
+	void update_attitude_imu_enu(sensor_msgs::Imu::Ptr &imu);
 
-	//! Get IMU data
-	sensor_msgs::Imu::Ptr get_attitude_imu();
+	/**
+	 * @brief Store IMU data [NED]
+	 */
+	void update_attitude_imu_ned(sensor_msgs::Imu::Ptr &imu);
+
+	/**
+	 * @brief Get IMU data [ENU]
+	 */
+	sensor_msgs::Imu::Ptr get_attitude_imu_enu();
+
+	/**
+	 * @brief Get IMU data [NED]
+	 */
+	sensor_msgs::Imu::Ptr get_attitude_imu_ned();
 
 	/**
 	 * @brief Get Attitude orientation quaternion
 	 * @return orientation quaternion [ENU]
 	 */
-	geometry_msgs::Quaternion get_attitude_orientation();
+	geometry_msgs::Quaternion get_attitude_orientation_enu();
+
+	/**
+	 * @brief Get Attitude orientation quaternion
+	 * @return orientation quaternion [NED]
+	 */
+	geometry_msgs::Quaternion get_attitude_orientation_ned();
 
 	/**
 	 * @brief Get angular velocity from IMU data
-	 * @return vector3
+	 * @return vector3 [ENU]
 	 */
-	geometry_msgs::Vector3 get_attitude_angular_velocity();
+	geometry_msgs::Vector3 get_attitude_angular_velocity_enu();
+
+	/**
+	 * @brief Get angular velocity from IMU data
+	 * @return vector3 [NED]
+	 */
+	geometry_msgs::Vector3 get_attitude_angular_velocity_ned();
 
 
 	/* -*- GPS data -*- */
@@ -204,12 +229,56 @@ public:
 	//! Retunrs last GPS RAW message
 	sensor_msgs::NavSatFix::Ptr get_gps_fix();
 
+	/* -*- GograpticLib utils -*- */
+
+	/**
+	 * @brief Geoid dataset used to convert between AMSL and WGS-84
+	 *
+	 * That class loads egm96_5 dataset to RAM, it is about 24 MiB.
+	 */
+	std::shared_ptr<GeographicLib::Geoid> egm96_5;
+
+	/**
+	 * @brief Conversion from height above geoid (AMSL)
+	 * to height above ellipsoid (WGS-84)
+	 */
+	template <class T>
+	inline double geoid_to_ellipsoid_height(T lla)
+	{
+		if (egm96_5)
+			return GeographicLib::Geoid::GEOIDTOELLIPSOID * (*egm96_5)(lla->latitude, lla->longitude);
+		else
+			return 0.0;
+	}
+
+	/**
+	 * @brief Conversion from height above ellipsoid (WGS-84)
+	 * to height above geoid (AMSL)
+	 */
+	template <class T>
+	inline double ellipsoid_to_geoid_height(T lla)
+	{
+		if (egm96_5)
+			return GeographicLib::Geoid::ELLIPSOIDTOGEOID * (*egm96_5)(lla->latitude, lla->longitude);
+		else
+			return 0.0;
+	}
 
 	/* -*- transform -*- */
 
 	tf2_ros::Buffer tf2_buffer;
 	tf2_ros::TransformListener tf2_listener;
 	tf2_ros::TransformBroadcaster tf2_broadcaster;
+	tf2_ros::StaticTransformBroadcaster tf2_static_broadcaster;
+
+	/**
+	 * @brief Publishes static transform.
+	 *
+	 * @param frame_id    parent frame for transform
+	 * @param child_id    child frame for transform
+	 * @param tr          transform
+	 */
+	void publish_static_transform(const std::string &frame_id, const std::string &child_id, const Eigen::Affine3d &tr);
 
 	/* -*- time sync -*- */
 
@@ -219,6 +288,14 @@ public:
 
 	inline uint64_t get_time_offset(void) {
 		return time_offset;
+	}
+
+	inline void set_timesync_mode(timesync_mode mode) {
+		tsync_mode = mode;
+	}
+
+	inline timesync_mode get_timesync_mode(void) {
+		return tsync_mode;
 	}
 
 	/* -*- autopilot version -*- */
@@ -328,8 +405,10 @@ private:
 	uint8_t target_component;
 
 	std::atomic<bool> connected;
+	std::vector<ConnectionCb> connection_cb_vec;
 
-	sensor_msgs::Imu::Ptr imu_data;
+	sensor_msgs::Imu::Ptr imu_enu_data;
+	sensor_msgs::Imu::Ptr imu_ned_data;
 
 	sensor_msgs::NavSatFix::Ptr gps_fix;
 	float gps_eph;
@@ -338,6 +417,7 @@ private:
 	int gps_satellites_visible;
 
 	std::atomic<uint64_t> time_offset;
+	timesync_mode tsync_mode;
 
 	std::atomic<bool> fcu_caps_known;
 	std::atomic<uint64_t> fcu_capabilities;

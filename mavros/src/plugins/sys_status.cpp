@@ -21,6 +21,7 @@
 #include <mavros_msgs/StreamRate.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/CommandLong.h>
+#include <mavros_msgs/StatusText.h>
 
 #ifdef HAVE_SENSOR_MSGS_BATTERYSTATE_MSG
 #include <sensor_msgs/BatteryState.h>
@@ -242,7 +243,11 @@ public:
 			stat.add("Motors are reversed", (last_st.onboard_control_sensors_health & enum_value(STS::REVERSE_MOTOR)) ? "Ok" : "Fail");
 		if (last_st.onboard_control_sensors_enabled & enum_value(STS::LOGGING))
 			stat.add("Logging", (last_st.onboard_control_sensors_health & enum_value(STS::LOGGING)) ? "Ok" : "Fail");
-		// [[[end]]] (checksum: ff583cfb8c621a8f7ac2f20aaf2e0ba9)
+		if (last_st.onboard_control_sensors_enabled & enum_value(STS::BATTERY))
+			stat.add("Battery", (last_st.onboard_control_sensors_health & enum_value(STS::BATTERY)) ? "Ok" : "Fail");
+		if (last_st.onboard_control_sensors_enabled & enum_value(STS::PROXIMITY))
+			stat.add("Proximity", (last_st.onboard_control_sensors_health & enum_value(STS::PROXIMITY)) ? "Ok" : "Fail");
+		// [[[end]]] (checksum: 9fc17aa4800635112524ab7e9c2cdcab)
 
 		stat.addf("CPU Load (%)", "%.1f", last_st.load / 10.0);
 		stat.addf("Drop rate (%)", "%.1f", last_st.drop_rate_comm / 10.0);
@@ -426,8 +431,8 @@ public:
 		double conn_heartbeat_d;
 		double min_voltage;
 
-		nh.param("conn/timeout", conn_timeout_d, 30.0);
-		nh.param("sys/min_voltage", min_voltage, 6.0);
+		nh.param("conn/timeout", conn_timeout_d, 10.0);
+		nh.param("sys/min_voltage", min_voltage, 10.0);
 		nh.param("sys/disable_diag", disable_diag, false);
 
 		// rate parameter
@@ -461,17 +466,17 @@ public:
 				&SystemStatusPlugin::autopilot_version_cb, this);
 		autopilot_version_timer.stop();
 
-		//XXX! subscribe to connection event
-		m_uas->sig_connection_changed.connect(boost::bind(&SystemStatusPlugin::connection_cb, this, _1));
-
 		state_pub = nh.advertise<mavros_msgs::State>("state", 10, true);
 		extended_state_pub = nh.advertise<mavros_msgs::ExtendedState>("extended_state", 10);
 		batt_pub = nh.advertise<BatteryMsg>("battery", 10);
+		statustext_pub = nh.advertise<mavros_msgs::StatusText>("statustext/recv", 10);
+		statustext_sub = nh.subscribe("statustext/send", 10, &SystemStatusPlugin::statustext_cb, this);
 		rate_srv = nh.advertiseService("set_stream_rate", &SystemStatusPlugin::set_rate_cb, this);
 		mode_srv = nh.advertiseService("set_mode", &SystemStatusPlugin::set_mode_cb, this);
 
 		// init state topic
 		publish_disconnection();
+		enable_connection_cb();
 	}
 
 	Subscriptions get_subscriptions() {
@@ -502,6 +507,8 @@ private:
 	ros::Publisher state_pub;
 	ros::Publisher extended_state_pub;
 	ros::Publisher batt_pub;
+	ros::Publisher statustext_pub;
+	ros::Subscriber statustext_sub;
 	ros::ServiceServer rate_srv;
 	ros::ServiceServer mode_srv;
 
@@ -623,6 +630,7 @@ private:
 		state_msg->armed = false;
 		state_msg->guided = false;
 		state_msg->mode = "";
+		state_msg->system_status = enum_value(MAV_STATE::UNINIT);
 
 		state_pub.publish(state_msg);
 	}
@@ -648,9 +656,10 @@ private:
 		auto state_msg = boost::make_shared<mavros_msgs::State>();
 		state_msg->header.stamp = ros::Time::now();
 		state_msg->connected = true;
-		state_msg->armed = hb.base_mode & enum_value(MAV_MODE_FLAG::SAFETY_ARMED);
-		state_msg->guided = hb.base_mode & enum_value(MAV_MODE_FLAG::GUIDED_ENABLED);
+		state_msg->armed = !!(hb.base_mode & enum_value(MAV_MODE_FLAG::SAFETY_ARMED));
+		state_msg->guided = !!(hb.base_mode & enum_value(MAV_MODE_FLAG::GUIDED_ENABLED));
 		state_msg->mode = m_uas->str_mode_v10(hb.base_mode, hb.custom_mode);
+		state_msg->system_status = hb.system_status;
 
 		state_pub.publish(state_msg);
 		hb_diag.tick(hb.type, hb.autopilot, state_msg->mode, hb.system_status);
@@ -708,8 +717,13 @@ private:
 	void handle_statustext(const mavlink::mavlink_message_t *msg, mavlink::common::msg::STATUSTEXT &textm)
 	{
 		auto text = mavlink::to_string(textm.text);
-
 		process_statustext_normal(textm.severity, text);
+
+		auto st_msg = boost::make_shared<mavros_msgs::StatusText>();
+		st_msg->header.stamp = ros::Time::now();
+		st_msg->severity = textm.severity;
+		st_msg->text = text;
+		statustext_pub.publish(st_msg);
 	}
 
 	void handle_meminfo(const mavlink::mavlink_message_t *msg, mavlink::ardupilotmega::msg::MEMINFO &mem)
@@ -821,7 +835,7 @@ private:
 
 		mavlink::common::msg::HEARTBEAT hb {};
 
-		hb.type = enum_value(MAV_TYPE::ONBOARD_CONTROLLER);
+		hb.type = enum_value(MAV_TYPE::ONBOARD_CONTROLLER); //! @todo patch PX4 so it can also handle this type as datalink
 		hb.autopilot = enum_value(MAV_AUTOPILOT::INVALID);
 		hb.base_mode = enum_value(MAV_MODE::MANUAL_ARMED);
 		hb.custom_mode = 0;
@@ -874,7 +888,7 @@ private:
 		}
 	}
 
-	void connection_cb(bool connected)
+	void connection_cb(bool connected) override
 	{
 		has_battery_status = false;
 
@@ -899,6 +913,20 @@ private:
 			// publish connection change
 			publish_disconnection();
 		}
+	}
+
+	/* -*- subscription callbacks -*- */
+
+	void statustext_cb(const mavros_msgs::StatusText::ConstPtr &req) {
+		mavlink::common::msg::STATUSTEXT statustext {};
+		statustext.severity = req->severity;
+
+		// Limit the length of the string by null-terminating at the 50-th character
+		ROS_WARN_COND_NAMED(req->text.length() >= statustext.text.size(), "sys",
+				"Status text too long: truncating...");
+		mavlink::set_string_z(statustext.text, req->text);
+
+		UAS_FCU(m_uas)->send_message_ignore_drop(statustext);
 	}
 
 	/* -*- ros callbacks -*- */
@@ -928,7 +956,7 @@ private:
 
 		if (req.custom_mode != "") {
 			if (!m_uas->cmode_from_str(req.custom_mode, custom_mode)) {
-				res.success = false;
+				res.mode_sent = false;
 				return true;
 			}
 
@@ -948,7 +976,7 @@ private:
 		sm.custom_mode = custom_mode;
 
 		UAS_FCU(m_uas)->send_message_ignore_drop(sm);
-		res.success = true;
+		res.mode_sent = true;
 		return true;
 	}
 };

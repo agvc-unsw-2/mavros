@@ -18,6 +18,7 @@
 
 // MAVLINK_VERSION string
 #include <mavlink/config.h>
+#include <mavconn/mavlink_dialect.h>
 
 using namespace mavros;
 using mavconn::MAVConnInterface;
@@ -32,6 +33,7 @@ MavRos::MavRos() :
 	fcu_link_diag("FCU connection"),
 	gcs_link_diag("GCS bridge"),
 	plugin_loader("mavros", "mavros::plugin::PluginBase"),
+	last_message_received_from_gcs(0),
 	plugin_subscriptions{}
 {
 	std::string fcu_url, gcs_url;
@@ -39,6 +41,7 @@ MavRos::MavRos() :
 	int system_id, component_id;
 	int tgt_system_id, tgt_component_id;
 	bool px4_usb_quirk;
+	double conn_timeout_d;
 	ros::V_string plugin_blacklist{}, plugin_whitelist{};
 	MAVConnInterface::Ptr fcu_link;
 
@@ -46,7 +49,10 @@ MavRos::MavRos() :
 
 	nh.param<std::string>("fcu_url", fcu_url, "serial:///dev/ttyACM0");
 	nh.param<std::string>("gcs_url", gcs_url, "udp://@");
-	nh.param<std::string>("fcu_protocol", fcu_protocol, "v1.0");
+	nh.param<bool>("gcs_quiet_mode", gcs_quiet_mode, false);
+	nh.param("conn/timeout", conn_timeout_d, 30.0);
+
+	nh.param<std::string>("fcu_protocol", fcu_protocol, "v2.0");
 	nh.param("system_id", system_id, 1);
 	nh.param<int>("component_id", component_id, mavconn::MAV_COMP_ID_UDP_BRIDGE);
 	nh.param("target_system_id", tgt_system_id, 1);
@@ -54,6 +60,8 @@ MavRos::MavRos() :
 	nh.param("startup_px4_usb_quirk", px4_usb_quirk, false);
 	nh.getParam("plugin_blacklist", plugin_blacklist);
 	nh.getParam("plugin_whitelist", plugin_whitelist);
+
+	conn_timeout = ros::Duration(conn_timeout_d);
 
 	// Now we use FCU URL as a hardware Id
 	UAS_DIAG(&mav_uas).setHardwareID(fcu_url);
@@ -117,9 +125,8 @@ MavRos::MavRos() :
 	mav_uas.set_tgt(tgt_system_id, tgt_component_id);
 	UAS_FCU(&mav_uas) = fcu_link;
 
-	// XXX!!!
-	mav_uas.sig_connection_changed.connect(boost::bind(&MavlinkDiag::set_connection_status, &fcu_link_diag, _1));
-	mav_uas.sig_connection_changed.connect(boost::bind(&MavRos::log_connect_change, this, _1));
+	mav_uas.add_connection_change_handler(std::bind(&MavlinkDiag::set_connection_status, &fcu_link_diag, std::placeholders::_1));
+	mav_uas.add_connection_change_handler(std::bind(&MavRos::log_connect_change, this, std::placeholders::_1));
 
 	// prepare plugin lists
 	// issue #257 2: assume that all plugins blacklisted
@@ -136,8 +143,14 @@ MavRos::MavRos() :
 		mavlink_pub_cb(msg, framing);
 		plugin_route_cb(msg, framing);
 
-		if (gcs_link)
+		if (gcs_link) {
+			if (this->gcs_quiet_mode && msg->msgid != mavlink::common::msg::HEARTBEAT::MSG_ID &&
+				(ros::Time::now() - this->last_message_received_from_gcs > this->conn_timeout)) {
+				return;
+			}
+
 			gcs_link->send_message_ignore_drop(msg);
+		}
 	};
 
 	fcu_link->port_closed_cb = []() {
@@ -148,6 +161,7 @@ MavRos::MavRos() :
 	if (gcs_link) {
 		// setup GCS link bridge
 		gcs_link->message_received_cb = [this, fcu_link](const mavlink_message_t *msg, const Framing framing) {
+			this->last_message_received_from_gcs = ros::Time::now();
 			fcu_link->send_message_ignore_drop(msg);
 		};
 
@@ -362,4 +376,3 @@ void MavRos::log_connect_change(bool connected)
 	else
 		ROS_WARN("CON: Lost connection, HEARTBEAT timed out.");
 }
-
