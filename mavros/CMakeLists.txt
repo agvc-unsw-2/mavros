@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   geographic_msgs
   std_msgs
+  mav_msgs
   std_srvs
   tf2_ros
   tf2_eigen
