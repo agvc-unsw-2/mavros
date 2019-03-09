@@ -50,10 +50,10 @@ public:
 		mp_nh.param("use_pose", use_pose, true);
 
 		if (use_tf && !use_pose) {
-			mocap_tf_sub = mp_nh.subscribe("tf", 1, &MocapPoseEstimatePlugin::mocap_tf_cb, this);
+			mocap_tf_sub = mp_nh.subscribe("tf", 1, &MocapPoseEstimatePlugin::mocap_tf_cb, this, ros::TransportHints().tcpNoDelay());
 		}
 		else if (use_pose && !use_tf) {
-			mocap_pose_sub = mp_nh.subscribe("pose", 1, &MocapPoseEstimatePlugin::mocap_pose_cb, this);
+			mocap_pose_sub = mp_nh.subscribe("pose", 1, &MocapPoseEstimatePlugin::mocap_pose_cb, this, ros::TransportHints().tcpNoDelay());
 		}
 		else {
 			ROS_ERROR_NAMED("mocap", "Use one motion capture source.");
