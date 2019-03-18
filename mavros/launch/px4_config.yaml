@@ -225,4 +225,4 @@ vibration:
 setpoint_raw:
   thrust_scaling_factor: 1.0000
   system_mass_kg: 1.00000
-  yaw_rate_scaling_factor: 100.0000
+  yaw_rate_scaling_factor: 10.0000
