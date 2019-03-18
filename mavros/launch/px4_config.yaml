@@ -221,3 +221,8 @@ vibration:
   frame_id: "base_link"
 
 # vim:set ts=2 sw=2 et:
+
+setpoint_raw:
+  thrust_scaling_factor: 1.0000
+  system_mass_kg: 1.00000
+  yaw_rate_scaling_factor: 100.0000

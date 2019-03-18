@@ -56,6 +56,9 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
+
+                ROS_INFO("heeeeeey!");
+
 		// main params
 		sp_nh.param("use_quaternion", use_quaternion, false);
 		sp_nh.param("reverse_thrust", reverse_thrust, false);

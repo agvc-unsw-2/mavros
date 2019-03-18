@@ -61,6 +61,8 @@ public:
 	      ignore_rpyt_messages_ = true;
 	    }
 
+            ROS_INFO("rpyt cb success init!");
+
 		local_sub = sp_nh.subscribe("local", 10, &SetpointRawPlugin::local_cb, this);
 		global_sub = sp_nh.subscribe("global", 10, &SetpointRawPlugin::global_cb, this);
 		attitude_sub = sp_nh.subscribe("attitude", 10, &SetpointRawPlugin::attitude_cb, this);
@@ -269,6 +271,7 @@ private:
       // the masks are much more limited than the docs would suggest so we don't use them
       uint8_t type_mask = 0;
       geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromRollPitchYaw(msg->roll, msg->pitch, 0);
+      // geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromRollPitchYaw(1.0, 2.0, 3.0);
       double thrust = std::min(1.0, std::max(0.0, msg->thrust.z * thrust_scaling_ * system_mass_kg_));
       
       Eigen::Quaterniond desired_orientation;
@@ -283,8 +286,11 @@ private:
       body_rate.x() = 0;
       body_rate.y() = 0;
       body_rate.z() = -yaw_rate_scaling_ * msg->yaw_rate;
+      // body_rate.z() = -1.0 * msg->yaw_rate;;
       set_attitude_target(msg->header.stamp.toNSec() / 1000000, type_mask,
                           ned_desired_orientation, body_rate, thrust);
+      // ROS_INFO("hiiiii");
+      //ROS_INFO_THROTTLE(1.0,"rpyt cb success inner");
     }
 };
 }	// namespace std_plugins
