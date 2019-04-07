@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  mav_msgs
   std_srvs
   tf2_eigen
   tf2_ros
