@@ -231,7 +231,7 @@ private:
 
 		ftf::quaternion_to_mavlink(orientation, msg.q);
 		ftf::covariance_urt_to_mavlink(cov_pose_map, msg.pose_covariance);
-		ftf::covariance_urt_to_mavlink(cov_vel_map, msg.twist_covariance);
+		ftf::covariance_urt_to_mavlink(cov_vel_map, msg.velocity_covariance);
 
 		// send ODOMETRY msg
 		UAS_FCU(m_uas)->send_message_ignore_drop(msg);
