@@ -48,6 +48,7 @@ public:
 	GlobalPositionPlugin() : PluginBase(),
 		gp_nh("~global_position"),
 		tf_send(false),
+		tf_invert(false),
 		rot_cov(99999.0),
 		use_relative_alt(true),
 		is_map_init(false)
@@ -64,7 +65,8 @@ public:
 		gp_nh.param("gps_uere", gps_uere, 1.0);
 		gp_nh.param("use_relative_alt", use_relative_alt, true);
 		// tf subsection
-		gp_nh.param("tf/send", tf_send, false);
+		gp_nh.param("tf/invert", tf_invert, false);
+		gp_nh.param("tf/send", tf_send, true);
 		gp_nh.param<std::string>("tf/frame_id", tf_frame_id, "map");
 		gp_nh.param<std::string>("tf/global_frame_id", tf_global_frame_id, "earth");	// The global_origin should be represented as "earth" coordinate frame (ECEF) (REP 105)
 		gp_nh.param<std::string>("tf/child_frame_id", tf_child_frame_id, "base_link");
@@ -124,6 +126,7 @@ private:
 	std::string tf_frame_id;	//!< origin for TF
 	std::string tf_global_frame_id;	//!< global origin for TF
 	std::string tf_child_frame_id;	//!< frame for TF and Pose
+	bool tf_invert;
 
 	bool tf_send;
 	bool use_relative_alt;
@@ -383,6 +386,16 @@ private:
 			transform.transform.translation.x = odom->pose.pose.position.x;
 			transform.transform.translation.y = odom->pose.pose.position.y;
 			transform.transform.translation.z = odom->pose.pose.position.z;
+
+			if(tf_invert) {
+				Eigen::Quaterniond rot;
+				tf::quaternionMsgToEigen(transform.transform.rotation, rot);
+				rot = rot.inverse();
+				tf::quaternionEigenToMsg(rot, transform.transform.rotation);
+				transform.transform.translation.x *= -1.0;
+				transform.transform.translation.y *= -1.0;
+				transform.transform.translation.z *= -1.0;
+			}
 
 			m_uas->tf2_broadcaster.sendTransform(transform);
 		}
