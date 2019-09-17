@@ -61,13 +61,13 @@ public:
 	      ignore_rpyt_messages_ = true;
 	    }
 
-            ROS_INFO("rpyt cb success init!");
+    ROS_INFO("rpyt cb success init!");
 
 		local_sub = sp_nh.subscribe("local", 10, &SetpointRawPlugin::local_cb, this);
 		global_sub = sp_nh.subscribe("global", 10, &SetpointRawPlugin::global_cb, this);
 		attitude_sub = sp_nh.subscribe("attitude", 10, &SetpointRawPlugin::attitude_cb, this);
 		rpyt_sub = sp_nh.subscribe("roll_pitch_yawrate_thrust", 10, &SetpointRawPlugin::rpyt_cb,
-		this, ros::TransportHints().tcpNoDelay());
+		  this, ros::TransportHints().tcpNoDelay());
 		target_local_pub = sp_nh.advertise<mavros_msgs::PositionTarget>("target_local", 10);
 		target_global_pub = sp_nh.advertise<mavros_msgs::GlobalPositionTarget>("target_global", 10);
 		target_attitude_pub = sp_nh.advertise<mavros_msgs::AttitudeTarget>("target_attitude", 10);
@@ -76,9 +76,9 @@ public:
 	Subscriptions get_subscriptions()
 	{
 		return {
-			       make_handler(&SetpointRawPlugin::handle_position_target_local_ned),
-			       make_handler(&SetpointRawPlugin::handle_position_target_global_int),
-			       make_handler(&SetpointRawPlugin::handle_attitude_target),
+				make_handler(&SetpointRawPlugin::handle_position_target_local_ned),
+				make_handler(&SetpointRawPlugin::handle_position_target_global_int),
+				make_handler(&SetpointRawPlugin::handle_attitude_target),
 		};
 	}
 
@@ -238,26 +238,47 @@ private:
 
 	void attitude_cb(const mavros_msgs::AttitudeTarget::ConstPtr &req)
 	{
+		double thrust_scaling;
 		Eigen::Quaterniond desired_orientation;
 		Eigen::Vector3d baselink_angular_rate;
+		Eigen::Vector3d body_rate;
+		double thrust;
 
-		tf::quaternionMsgToEigen(req->orientation, desired_orientation);
+		// Set Thrust scaling in px4_config.yaml, setpoint_raw block.
+		// ignore thrust is false by default, unless no thrust scalling is set or thrust is zero
+		auto ignore_thrust = req->thrust != 0.0 && !sp_nh.getParam("thrust_scaling", thrust_scaling);
+
+		if (ignore_thrust) {
+			// I believe it's safer without sending zero thrust, but actually ignoring the actuation.
+			ROS_FATAL_THROTTLE_NAMED(5, "setpoint_raw", "Recieved thrust, but ignore_thrust is true: "
+				"the most likely cause of this is a failure to specify the thrust_scaling parameters "
+				"on px4/apm_config.yaml. Actuation will be ignored.");
+			return;
+		} else {
+			if (thrust_scaling == 0.0) {
+				ROS_WARN_THROTTLE_NAMED(5, "setpoint_raw", "thrust_scaling parameter is set to zero.");
+			}
+			thrust = std::min(1.0, std::max(0.0, req->thrust * thrust_scaling));
+		}
+
+		// Take care of attitude setpoint
+		desired_orientation = ftf::to_eigen(req->orientation);
 
 		// Transform desired orientation to represent aircraft->NED,
 		// MAVROS operates on orientation of base_link->ENU
 		auto ned_desired_orientation = ftf::transform_orientation_enu_ned(
-					ftf::transform_orientation_baselink_aircraft(desired_orientation));
+			ftf::transform_orientation_baselink_aircraft(desired_orientation));
 
-		auto body_rate = ftf::transform_frame_baselink_aircraft(baselink_angular_rate);
-
-		tf::vectorMsgToEigen(req->body_rate, body_rate);
+		body_rate = ftf::transform_frame_baselink_aircraft(
+			ftf::to_eigen(req->body_rate));
 
 		set_attitude_target(
 					req->header.stamp.toNSec() / 1000000,
 					req->type_mask,
 					ned_desired_orientation,
 					body_rate,
-					req->thrust);
+					thrust);
+
 	}
 
     void rpyt_cb(const mav_msgs::RollPitchYawrateThrustConstPtr msg) {
@@ -272,7 +293,6 @@ private:
       // the masks are much more limited than the docs would suggest so we don't use them
       uint8_t type_mask = 0;
       geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromRollPitchYaw(msg->roll, msg->pitch, 0);
-      // geometry_msgs::Quaternion orientation = tf::createQuaternionMsgFromRollPitchYaw(1.0, 2.0, 3.0);
       double thrust = std::min(1.0, std::max(0.0, msg->thrust.z * thrust_scaling_ * system_mass_kg_));
       
       Eigen::Quaterniond desired_orientation;
@@ -287,11 +307,8 @@ private:
       body_rate.x() = 0;
       body_rate.y() = 0;
       body_rate.z() = -yaw_rate_scaling_ * msg->yaw_rate;
-      // body_rate.z() = -1.0 * msg->yaw_rate;;
       set_attitude_target(msg->header.stamp.toNSec() / 1000000, type_mask,
                           ned_desired_orientation, body_rate, thrust);
-      // ROS_INFO("hiiiii");
-      //ROS_INFO_THROTTLE(1.0,"rpyt cb success inner");
     }
 };
 }	// namespace std_plugins
