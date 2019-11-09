@@ -69,7 +69,7 @@ public:
 		sp_nh.param("tf/rate_limit", tf_rate, 50.0);
 
 		// thrust msg subscriber to sync
-		th_sub.subscribe(sp_nh, "thrust", 1, ros::TransportHints().tcpNoDelay(), ros::TransportHints().tcpNoDelay());
+		th_sub.subscribe(sp_nh, "thrust", 1, ros::TransportHints().tcpNoDelay());
 
 		if (tf_listen) {
 			ROS_INFO_STREAM_NAMED("attitude",
@@ -82,7 +82,7 @@ public:
 			/**
 			 * @brief Use message_filters to sync attitude and thrust msg coming from different topics
 			 */
-			pose_sub.subscribe(sp_nh, "attitude", 1, ros::TransportHints().tcpNoDelay(), ros::TransportHints().tcpNoDelay());
+			pose_sub.subscribe(sp_nh, "attitude", 1, ros::TransportHints().tcpNoDelay());
 
 			/**
 			 * @brief Matches messages, even if they have different time stamps,
