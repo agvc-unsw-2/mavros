@@ -63,15 +63,15 @@ public:
 			tf2_start("PositionSpTF", &SetpointPositionPlugin::transform_cb);
 		}
 		else {
-			setpoint_sub = sp_nh.subscribe("local", 10, &SetpointPositionPlugin::setpoint_cb, this);
+			setpoint_sub = sp_nh.subscribe("local", 10, &SetpointPositionPlugin::setpoint_cb, this, ros::TransportHints().tcpNoDelay());
 			// Subscriber for goal gps
-			setpointg_sub = sp_nh.subscribe("global", 10, &SetpointPositionPlugin::setpointg_cb, this);
+			setpointg_sub = sp_nh.subscribe("global", 10, &SetpointPositionPlugin::setpointg_cb, this, ros::TransportHints().tcpNoDelay());
 			// Subscriber for goal gps but will convert it to local coordinates
-			setpointg2l_sub = sp_nh.subscribe("global_to_local", 10, &SetpointPositionPlugin::setpointg2l_cb, this);
+			setpointg2l_sub = sp_nh.subscribe("global_to_local", 10, &SetpointPositionPlugin::setpointg2l_cb, this, ros::TransportHints().tcpNoDelay());
 			// subscriber for current gps state, mavros/global_position/global.
-			gps_sub = spg_nh.subscribe("global_position/global", 10, &SetpointPositionPlugin::gps_cb, this);
+			gps_sub = spg_nh.subscribe("global_position/global", 10, &SetpointPositionPlugin::gps_cb, this, ros::TransportHints().tcpNoDelay());
 			// Subscribe for current local ENU pose.
-			local_sub = spg_nh.subscribe("local_position/pose", 10, &SetpointPositionPlugin::local_cb, this);
+			local_sub = spg_nh.subscribe("local_position/pose", 10, &SetpointPositionPlugin::local_cb, this, ros::TransportHints().tcpNoDelay());
 		}
 		mav_frame_srv = sp_nh.advertiseService("mav_frame", &SetpointPositionPlugin::set_mav_frame_cb, this);
 

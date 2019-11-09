@@ -484,7 +484,7 @@ public:
 		extended_state_pub = nh.advertise<mavros_msgs::ExtendedState>("extended_state", 10);
 		batt_pub = nh.advertise<BatteryMsg>("battery", 10);
 		statustext_pub = nh.advertise<mavros_msgs::StatusText>("statustext/recv", 10);
-		statustext_sub = nh.subscribe("statustext/send", 10, &SystemStatusPlugin::statustext_cb, this);
+		statustext_sub = nh.subscribe("statustext/send", 10, &SystemStatusPlugin::statustext_cb, this, ros::TransportHints().tcpNoDelay());
 		rate_srv = nh.advertiseService("set_stream_rate", &SystemStatusPlugin::set_rate_cb, this);
 		mode_srv = nh.advertiseService("set_mode", &SystemStatusPlugin::set_mode_cb, this);
 		vehicle_info_get_srv = nh.advertiseService("vehicle_info_get", &SystemStatusPlugin::vehicle_info_get_cb, this);

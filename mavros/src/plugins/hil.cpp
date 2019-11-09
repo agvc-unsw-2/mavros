@@ -49,11 +49,11 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
-		hil_state_quaternion_sub = hil_nh.subscribe("state", 10, &HilPlugin::state_quat_cb, this);
-		hil_gps_sub = hil_nh.subscribe("gps", 10, &HilPlugin::gps_cb, this);
-		hil_sensor_sub = hil_nh.subscribe("imu_ned", 10, &HilPlugin::sensor_cb, this);
-		hil_flow_sub = hil_nh.subscribe("optical_flow", 10, &HilPlugin::optical_flow_cb, this);
-		hil_rcin_sub = hil_nh.subscribe("rc_inputs", 10, &HilPlugin::rcin_raw_cb, this);
+		hil_state_quaternion_sub = hil_nh.subscribe("state", 10, &HilPlugin::state_quat_cb, this, ros::TransportHints().tcpNoDelay());
+		hil_gps_sub = hil_nh.subscribe("gps", 10, &HilPlugin::gps_cb, this, ros::TransportHints().tcpNoDelay());
+		hil_sensor_sub = hil_nh.subscribe("imu_ned", 10, &HilPlugin::sensor_cb, this, ros::TransportHints().tcpNoDelay());
+		hil_flow_sub = hil_nh.subscribe("optical_flow", 10, &HilPlugin::optical_flow_cb, this, ros::TransportHints().tcpNoDelay());
+		hil_rcin_sub = hil_nh.subscribe("rc_inputs", 10, &HilPlugin::rcin_raw_cb, this, ros::TransportHints().tcpNoDelay());
 
 		hil_controls_pub = hil_nh.advertise<mavros_msgs::HilControls>("controls", 10);
 		hil_actuator_controls_pub = hil_nh.advertise<mavros_msgs::HilActuatorControls>("actuator_controls", 10);

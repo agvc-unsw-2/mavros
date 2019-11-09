@@ -34,7 +34,7 @@ public:
 		PluginBase::initialize(uas_);
 
 		control_pub = manual_control_nh.advertise<mavros_msgs::ManualControl>("control", 10);
-		send_sub = manual_control_nh.subscribe("send", 1, &ManualControlPlugin::send_cb, this);
+		send_sub = manual_control_nh.subscribe("send", 1, &ManualControlPlugin::send_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions() {

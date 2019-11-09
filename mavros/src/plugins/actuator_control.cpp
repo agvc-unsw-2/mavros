@@ -36,7 +36,7 @@ public:
 		PluginBase::initialize(uas_);
 
 		target_actuator_control_pub = nh.advertise<mavros_msgs::ActuatorControl>("target_actuator_control", 10);
-		actuator_control_sub = nh.subscribe("actuator_control", 10, &ActuatorControlPlugin::actuator_control_cb, this);
+		actuator_control_sub = nh.subscribe("actuator_control", 10, &ActuatorControlPlugin::actuator_control_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()

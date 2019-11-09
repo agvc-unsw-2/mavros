@@ -41,7 +41,7 @@ public:
 
 		rc_in_pub = rc_nh.advertise<sensor_msgs::Joy>("in", 10);
 		rc_out_pub = rc_nh.advertise<mavros_msgs::RCOut>("out", 10);
-		override_sub = rc_nh.subscribe("override", 10, &RCIOPlugin::override_cb, this);
+		override_sub = rc_nh.subscribe("override", 10, &RCIOPlugin::override_cb, this, ros::TransportHints().tcpNoDelay());
 
 		enable_connection_cb();
 	};

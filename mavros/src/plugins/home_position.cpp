@@ -41,7 +41,7 @@ public:
 		PluginBase::initialize(uas_);
 
 		hp_pub = hp_nh.advertise<mavros_msgs::HomePosition>("home", 2, true);
-		hp_sub = hp_nh.subscribe("set", 10, &HomePositionPlugin::home_position_cb, this);
+		hp_sub = hp_nh.subscribe("set", 10, &HomePositionPlugin::home_position_cb, this, ros::TransportHints().tcpNoDelay());
 		update_srv = hp_nh.advertiseService("req_update", &HomePositionPlugin::req_update_cb, this);
 
 		poll_timer = hp_nh.createTimer(REQUEST_POLL_TIME_DT, &HomePositionPlugin::timeout_cb, this);

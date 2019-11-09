@@ -45,7 +45,7 @@ public:
 
 		//cmd_vel usually is the topic used for velocity control in many controllers / planners
 		vel_sub = sp_nh.subscribe("cmd_vel", 10, &SetpointVelocityPlugin::vel_cb, this, ros::TransportHints().tcpNoDelay());
-		vel_unstamped_sub = sp_nh.subscribe("cmd_vel_unstamped", 10, &SetpointVelocityPlugin::vel_unstamped_cb, this);
+		vel_unstamped_sub = sp_nh.subscribe("cmd_vel_unstamped", 10, &SetpointVelocityPlugin::vel_unstamped_cb, this, ros::TransportHints().tcpNoDelay());
 		mav_frame_srv = sp_nh.advertiseService("mav_frame", &SetpointVelocityPlugin::set_mav_frame_cb, this);
 
 		// mav_frame

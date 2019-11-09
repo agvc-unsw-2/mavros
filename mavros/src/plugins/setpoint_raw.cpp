@@ -63,9 +63,9 @@ public:
 
     ROS_INFO("rpyt cb success init!");
 
-		local_sub = sp_nh.subscribe("local", 10, &SetpointRawPlugin::local_cb, this);
-		global_sub = sp_nh.subscribe("global", 10, &SetpointRawPlugin::global_cb, this);
-		attitude_sub = sp_nh.subscribe("attitude", 10, &SetpointRawPlugin::attitude_cb, this);
+		local_sub = sp_nh.subscribe("local", 10, &SetpointRawPlugin::local_cb, this, ros::TransportHints().tcpNoDelay());
+		global_sub = sp_nh.subscribe("global", 10, &SetpointRawPlugin::global_cb, this, ros::TransportHints().tcpNoDelay());
+		attitude_sub = sp_nh.subscribe("attitude", 10, &SetpointRawPlugin::attitude_cb, this, ros::TransportHints().tcpNoDelay());
 		rpyt_sub = sp_nh.subscribe("roll_pitch_yawrate_thrust", 10, &SetpointRawPlugin::rpyt_cb,
 		  this, ros::TransportHints().tcpNoDelay());
 		target_local_pub = sp_nh.advertise<mavros_msgs::PositionTarget>("target_local", 10);

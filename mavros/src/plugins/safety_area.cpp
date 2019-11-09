@@ -66,7 +66,7 @@ public:
 					Eigen::Vector3d(p1x, p1y, p1z),
 					Eigen::Vector3d(p2x, p2y, p2z));
 
-		safetyarea_sub = safety_nh.subscribe("set", 10, &SafetyAreaPlugin::safetyarea_cb, this);
+		safetyarea_sub = safety_nh.subscribe("set", 10, &SafetyAreaPlugin::safetyarea_cb, this, ros::TransportHints().tcpNoDelay());
 		safetyarea_pub = safety_nh.advertise<geometry_msgs::PolygonStamped>("get",10);
 	}
 

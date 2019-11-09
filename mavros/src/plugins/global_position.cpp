@@ -91,7 +91,7 @@ public:
 
 		// home position subscriber to set "map" origin
 		// TODO use UAS
-		hp_sub = gp_nh.subscribe("home", 10, &GlobalPositionPlugin::home_position_cb, this);
+		hp_sub = gp_nh.subscribe("home", 10, &GlobalPositionPlugin::home_position_cb, this, ros::TransportHints().tcpNoDelay());
 
 		// offset from local position to the global origin ("earth")
 		gp_global_offset_pub = gp_nh.advertise<geometry_msgs::PoseStamped>("gp_lp_offset", 10);

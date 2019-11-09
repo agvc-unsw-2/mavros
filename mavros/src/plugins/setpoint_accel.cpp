@@ -43,7 +43,7 @@ public:
 
 		sp_nh.param("send_force", send_force, false);
 
-		accel_sub = sp_nh.subscribe("accel", 10, &SetpointAccelerationPlugin::accel_cb, this);
+		accel_sub = sp_nh.subscribe("accel", 10, &SetpointAccelerationPlugin::accel_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()
