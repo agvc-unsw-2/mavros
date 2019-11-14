@@ -87,7 +87,7 @@ public:
 
 		// global origin
 		gp_global_origin_pub = gp_nh.advertise<geographic_msgs::GeoPointStamped>("gp_origin", 10);
-		gp_set_global_origin_sub = gp_nh.subscribe("set_gp_origin", 10, &GlobalPositionPlugin::set_gp_origin_cb, this);
+		gp_set_global_origin_sub = gp_nh.subscribe("set_gp_origin", 10, &GlobalPositionPlugin::set_gp_origin_cb, this, ros::TransportHints().tcpNoDelay());
 
 		// home position subscriber to set "map" origin
 		// TODO use UAS

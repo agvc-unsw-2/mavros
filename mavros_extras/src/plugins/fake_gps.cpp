@@ -111,14 +111,14 @@ public:
 
 		if (use_mocap) {
 			if (mocap_transform) {	// MoCap data in TransformStamped msg
-				mocap_tf_sub = fp_nh.subscribe("mocap/tf", 10, &FakeGPSPlugin::mocap_tf_cb, this);
+				mocap_tf_sub = fp_nh.subscribe("mocap/tf", 10, &FakeGPSPlugin::mocap_tf_cb, this, ros::TransportHints().tcpNoDelay());
 			}
 			else {	// MoCap data in PoseStamped msg
-				mocap_pose_sub = fp_nh.subscribe("mocap/pose", 10, &FakeGPSPlugin::mocap_pose_cb, this);
+				mocap_pose_sub = fp_nh.subscribe("mocap/pose", 10, &FakeGPSPlugin::mocap_pose_cb, this, ros::TransportHints().tcpNoDelay());
 			}
 		}
 		else if (use_vision) {	// Vision data in PoseStamped msg
-			vision_pose_sub = fp_nh.subscribe("vision", 10, &FakeGPSPlugin::vision_cb, this);
+			vision_pose_sub = fp_nh.subscribe("vision", 10, &FakeGPSPlugin::vision_cb, this, ros::TransportHints().tcpNoDelay());
 		}
 		else if (tf_listen) {	// Pose aquired from TF Listener
 			ROS_INFO_STREAM_NAMED("fake_gps", "Listen to transform " << tf_frame_id

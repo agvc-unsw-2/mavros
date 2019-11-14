@@ -59,7 +59,7 @@ public:
 		range_pub = flow_nh.advertise<sensor_msgs::Range>("ground_distance", 10);
 		temp_pub = flow_nh.advertise<sensor_msgs::Temperature>("temperature", 10);
 
-		flow_rad_sub = flow_nh.subscribe("raw/send", 1, &PX4FlowPlugin::send_cb, this);
+		flow_rad_sub = flow_nh.subscribe("raw/send", 1, &PX4FlowPlugin::send_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()

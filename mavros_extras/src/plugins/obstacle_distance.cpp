@@ -42,7 +42,7 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
-		obstacle_sub = obstacle_nh.subscribe("send", 10, &ObstacleDistancePlugin::obstacle_cb, this);
+		obstacle_sub = obstacle_nh.subscribe("send", 10, &ObstacleDistancePlugin::obstacle_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()

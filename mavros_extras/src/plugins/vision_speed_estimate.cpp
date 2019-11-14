@@ -47,12 +47,12 @@ public:
 
 		if (listen_twist) {
 			if (twist_cov)
-				vision_twist_cov_sub = sp_nh.subscribe("speed_twist_cov", 10, &VisionSpeedEstimatePlugin::twist_cov_cb, this);
+				vision_twist_cov_sub = sp_nh.subscribe("speed_twist_cov", 10, &VisionSpeedEstimatePlugin::twist_cov_cb, this, ros::TransportHints().tcpNoDelay());
 			else
-				vision_twist_sub = sp_nh.subscribe("speed_twist", 10, &VisionSpeedEstimatePlugin::twist_cb, this);
+				vision_twist_sub = sp_nh.subscribe("speed_twist", 10, &VisionSpeedEstimatePlugin::twist_cb, this, ros::TransportHints().tcpNoDelay());
 		}
 		else
-			vision_vector_sub = sp_nh.subscribe("speed_vector", 10, &VisionSpeedEstimatePlugin::vector_cb, this);
+			vision_vector_sub = sp_nh.subscribe("speed_vector", 10, &VisionSpeedEstimatePlugin::vector_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()

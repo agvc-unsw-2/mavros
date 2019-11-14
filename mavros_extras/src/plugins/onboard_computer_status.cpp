@@ -36,7 +36,7 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
-		status_sub = status_nh.subscribe("status", 10, &OnboardComputerStatusPlugin::status_cb, this);
+		status_sub = status_nh.subscribe("status", 10, &OnboardComputerStatusPlugin::status_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()

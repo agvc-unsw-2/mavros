@@ -57,8 +57,8 @@ public:
 			tf2_start("VisionPoseTF", &VisionPoseEstimatePlugin::transform_cb);
 		}
 		else {
-			vision_sub = sp_nh.subscribe("pose", 10, &VisionPoseEstimatePlugin::vision_cb, this);
-			vision_cov_sub = sp_nh.subscribe("pose_cov", 10, &VisionPoseEstimatePlugin::vision_cov_cb, this);
+			vision_sub = sp_nh.subscribe("pose", 10, &VisionPoseEstimatePlugin::vision_cb, this, ros::TransportHints().tcpNoDelay());
+			vision_cov_sub = sp_nh.subscribe("pose_cov", 10, &VisionPoseEstimatePlugin::vision_cov_cb, this, ros::TransportHints().tcpNoDelay());
 		}
 	}
 

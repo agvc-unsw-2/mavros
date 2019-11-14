@@ -45,7 +45,7 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
-		command_sub = mount_nh.subscribe("command", 10, &MountControlPlugin::command_cb, this);
+		command_sub = mount_nh.subscribe("command", 10, &MountControlPlugin::command_cb, this, ros::TransportHints().tcpNoDelay());
 		configure_srv = mount_nh.advertiseService("configure", &MountControlPlugin::mount_configure_cb, this);
 
 	}

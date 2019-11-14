@@ -39,7 +39,7 @@ public:
 		PluginBase::initialize(uas_);
 
 		adsb_pub = adsb_nh.advertise<mavros_msgs::ADSBVehicle>("vehicle", 10);
-		adsb_sub = adsb_nh.subscribe("send", 10, &ADSBPlugin::adsb_cb, this);
+		adsb_sub = adsb_nh.subscribe("send", 10, &ADSBPlugin::adsb_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()

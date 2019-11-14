@@ -47,8 +47,8 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
-		trajectory_generated_sub = trajectory_nh.subscribe("generated", 10, &TrajectoryPlugin::trajectory_cb, this);
-		path_sub = trajectory_nh.subscribe("path", 10, &TrajectoryPlugin::path_cb, this);
+		trajectory_generated_sub = trajectory_nh.subscribe("generated", 10, &TrajectoryPlugin::trajectory_cb, this, ros::TransportHints().tcpNoDelay());
+		path_sub = trajectory_nh.subscribe("path", 10, &TrajectoryPlugin::path_cb, this, ros::TransportHints().tcpNoDelay());
 		trajectory_desired_pub = trajectory_nh.advertise<mavros_msgs::Trajectory>("desired", 10);
 	}
 

@@ -383,7 +383,7 @@ DistanceSensorItem::Ptr DistanceSensorItem::create_item(DistanceSensorPlugin *ow
 	if (!p->is_subscriber)
 		p->pub = owner->dist_nh.advertise<sensor_msgs::Range>(topic_name, 10);
 	else
-		p->sub = owner->dist_nh.subscribe(topic_name, 10, &DistanceSensorItem::range_cb, p.get());
+		p->sub = owner->dist_nh.subscribe(topic_name, 10, &DistanceSensorItem::range_cb, p.get(), ros::TransportHints().tcpNoDelay());
 
 	return p;
 }

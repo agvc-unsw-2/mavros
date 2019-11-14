@@ -43,7 +43,7 @@ public:
 	{
 		PluginBase::initialize(uas_);
 
-		status_sub = status_nh.subscribe("status", 10, &CompanionProcessStatusPlugin::status_cb, this);
+		status_sub = status_nh.subscribe("status", 10, &CompanionProcessStatusPlugin::status_cb, this, ros::TransportHints().tcpNoDelay());
 	}
 
 	Subscriptions get_subscriptions()
