@@ -63,14 +63,14 @@ public:
 
     ROS_INFO("rpyt cb success init!");
 
-		local_sub = sp_nh.subscribe("local", 10, &SetpointRawPlugin::local_cb, this, ros::TransportHints().tcpNoDelay());
-		global_sub = sp_nh.subscribe("global", 10, &SetpointRawPlugin::global_cb, this, ros::TransportHints().tcpNoDelay());
-		attitude_sub = sp_nh.subscribe("attitude", 10, &SetpointRawPlugin::attitude_cb, this, ros::TransportHints().tcpNoDelay());
-		rpyt_sub = sp_nh.subscribe("roll_pitch_yawrate_thrust", 10, &SetpointRawPlugin::rpyt_cb,
+		local_sub = sp_nh.subscribe("local", 1, &SetpointRawPlugin::local_cb, this, ros::TransportHints().tcpNoDelay());
+		global_sub = sp_nh.subscribe("global", 1, &SetpointRawPlugin::global_cb, this, ros::TransportHints().tcpNoDelay());
+		attitude_sub = sp_nh.subscribe("attitude", 1, &SetpointRawPlugin::attitude_cb, this, ros::TransportHints().tcpNoDelay());
+		rpyt_sub = sp_nh.subscribe("roll_pitch_yawrate_thrust", 1, &SetpointRawPlugin::rpyt_cb,
 		  this, ros::TransportHints().tcpNoDelay());
-		target_local_pub = sp_nh.advertise<mavros_msgs::PositionTarget>("target_local", 10);
-		target_global_pub = sp_nh.advertise<mavros_msgs::GlobalPositionTarget>("target_global", 10);
-		target_attitude_pub = sp_nh.advertise<mavros_msgs::AttitudeTarget>("target_attitude", 10);
+		target_local_pub = sp_nh.advertise<mavros_msgs::PositionTarget>("target_local", 1);
+		target_global_pub = sp_nh.advertise<mavros_msgs::GlobalPositionTarget>("target_global", 1);
+		target_attitude_pub = sp_nh.advertise<mavros_msgs::AttitudeTarget>("target_attitude", 1);
 	}
 
 	Subscriptions get_subscriptions()
@@ -169,7 +169,7 @@ private:
 		tf::vectorEigenToMsg(body_rate, target->body_rate);
 		target->thrust = tgt.thrust;
 
-		target_attitude_pub.publish(target);
+		//target_attitude_pub.publish(target);
 	}
 
 	/* -*- callbacks -*- */
